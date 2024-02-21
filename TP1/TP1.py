@@ -1,20 +1,19 @@
 import asyncio
 from ascon import _ascon 
+import os
+
+seed = os.urandom(32)
 
 # Função para gerar chaves usando Ascon em modo XOF
 def generate_keys(seed):
     key = _ascon.ascon_hash(seed, variant = "Ascon-Xof", hashlength=16)
     nonce = _ascon.ascon_hash(seed, variant="Ascon-Xof", hashlength=16)
-#    key_gen.absorb(seed)
-#    key = key_gen.squeeze(32)  # 32-byte key for encryption/authentication
-#    nonce = key_gen.squeeze(16)  # 16-byte nonce
+
     return key, nonce
 
 # Função para criptografar e autenticar dados
 def encrypt_and_authenticate(key, nonce, data, associated_data=b''):
     cipher = _ascon.ascon_encrypt(key, nonce=nonce,associateddata=associated_data, plaintext=data, variant="Ascon-128")
-#    cipher_header = cipher.encrypt(nonce, associated_data)
-#   cipher_text = cipher.encrypt(nonce, data)
     return cipher
 
 # Função para descriptografar e verificar a autenticação dos dados
@@ -30,10 +29,13 @@ def decrypt_and_verify(key, nonce, cipher_text, associated_data=b''):
 #     print(cifra)
 #     print(decrypt_and_verify(key,nonce,cifra))
 
+
+
 async def emitter():
     # Emitter's keys
-    emitter_key, emitter_nonce = generate_keys(b"emitter_seed")
 
+    emitter_key, emitter_nonce = generate_keys(seed)
+    print(emitter_key,emitter_nonce)
     # Message to be sent
     message = b"Hello, Receiver!"
 
@@ -53,7 +55,7 @@ async def emitter():
 # Receiver
 async def receiver(reader, writer):
     # Receiver's keys
-    receiver_key, receiver_nonce = generate_keys(b"receiver_seed")
+    receiver_key, receiver_nonce = generate_keys(seed)
 
     # Receive the encrypted message
     data = await reader.read()
