@@ -1,8 +1,7 @@
 import asyncio
 from ascon import _ascon 
 import os
-
-seed = os.urandom(32)
+import secrets
 
 # Função para gerar chaves usando Ascon em modo XOF
 def generate_keys(seed):
@@ -31,7 +30,7 @@ def decrypt_and_verify(key, nonce, cipher_text, associated_data=b''):
 
 
 
-async def emitter():
+async def emitter(seed):
     # Emitter's keys
 
     emitter_key, emitter_nonce = generate_keys(seed)
@@ -53,7 +52,7 @@ async def emitter():
     writer.close()
 
 # Receiver
-async def receiver(reader, writer):
+async def receiver(reader, writer, seed):
     # Receiver's keys
     receiver_key, receiver_nonce = generate_keys(seed)
 
@@ -66,10 +65,12 @@ async def receiver(reader, writer):
 
 # Main function to start the server and run the emitter
 async def main():
-    server = await asyncio.start_server(receiver, 'localhost', 8888)
+    seed = secrets.token_bytes(32)
+
+    server = await asyncio.start_server(lambda r,w: receiver(r, w: seed), 'localhost', 8888)
 
     # Run the emitter concurrently with the server
-    await asyncio.gather(server.serve_forever(), emitter())
+    await asyncio.gather(server.serve_forever(), emitter(seed))
 
 if __name__ == "__main__":
     asyncio.run(main())
